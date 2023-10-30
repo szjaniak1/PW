@@ -4,6 +4,7 @@ import(
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 )
 
 var k int
@@ -19,36 +20,36 @@ type traveller struct {
 
 func spawn_random_traveller() {
 	for{
+		time.Sleep(time.Second * 10)
 
-	}
+		// traveler new
+		go run_traveller(traveller)
+	}	
 }
 
-func run_traveller() {
+func run_traveller(traveller *traveller) {
+	for {
+
+	}
 }
 
 func print_board(board [][]int) {
 	var i int
 	var j int
-	for i = 0; i < m; i++ {
-		for j = 0; j < n; j++ {
-			if board[i][j] == 0 {
-				fmt.Printf("|--|")
-			} else {
-				fmt.Printf("|%d|", board[i][j])
-			}
-		}
-		fmt.Println()
-	}
-}
 
-func generate_board(board [][]int) {
-	var i int
-	var j int
-	// board = make([][]int, int(m), int(n))
-	for i = 0; i < m; i++ {
-		for j = 0; j < n; j++ {
-			board[i][j] = 0
+	for {
+		for i = 0; i < m; i++ {
+			for j = 0; j < n; j++ {
+				if board[i][j] == 0 {
+					fmt.Printf("|--|")
+				} else {
+					fmt.Printf("|%d|", board[i][j])
+				}
+			}
+			fmt.Println()
 		}
+
+		time.Sleep(time.Second * 3)
 	}
 }
 
@@ -68,10 +69,10 @@ func main() {
 		board[i] = make([]int, n)
 	}
 
-	generate_board(board)
-
-	fmt.Printf(string(m + n + k))
-
-	print_board(board)
-	// go spawn_random_traveller()
+	go spawn_random_traveller()
+	go print_board(board)
+	time.Sleep(time.Second* 5)
+	board[2][2] = 45
+	board[1][1] = 12
+	time.Sleep(time.Second * 10)
 }
