@@ -53,7 +53,6 @@ func vertex_listener(vert *vertex) {
 			traveller.vertex.locator = "--"
 			traveller.vertex.traveller = nil
 		}
-		
 		traveller.vertex = vert
 	}
 }
@@ -132,6 +131,9 @@ func print_board(board [][]*vertex) {
 			for j = 0; j < n; j++ {
 				if board[i][j].locator != "--" {
 					fmt.Printf("|%s", board[i][j].locator)
+					if traces[i][j] == 1 {
+						traces[i][j] = 0
+					}
 				} else if traces[i][j] == 1{
 					fmt.Printf("|xx")
 					traces[i][j] = 0
