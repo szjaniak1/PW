@@ -11,6 +11,7 @@ import(
 var k int
 var m int
 var n int
+var traces [][]uint8
 var err error
 
 type vertex struct {
@@ -78,7 +79,7 @@ func spawn_random_traveller(board [][]*vertex) {
 		k++
 		go run_traveller(traveller, board)
 		if k >= m * n { break }
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Second * 5)
 	}
 }
 
@@ -91,24 +92,28 @@ func run_traveller(traveller *traveller, board [][]*vertex) {
 			if x + 1 < m && board[x + 1][y].traveller == nil{
 				board[x + 1][y].channel <- traveller
 				traveller.pos_x++
+				traces[x][y] = 1
 			}
 			break
 		case 1:
 			if x - 1 >= 0 && board[x - 1][y].traveller == nil{
 				board[x - 1][y].channel <- traveller
 				traveller.pos_x--
+				traces[x][y] = 1
 			}
 			break
 		case 2:
 			if y + 1 < n && board[x][y + 1].traveller == nil{
 				board[x][y + 1].channel <- traveller
 				traveller.pos_y++
+				traces[x][y] = 1
 			}
 			break
 		case 3:
 			if y - 1 >= 0 && board[x][y - 1].traveller == nil{
 				board[x][y - 1].channel <- traveller
 				traveller.pos_y--
+				traces[x][y] = 1
 			}
 			break
 		}
@@ -125,12 +130,20 @@ func print_board(board [][]*vertex) {
 	for {
 		for i = 0; i < m; i++ {
 			for j = 0; j < n; j++ {
-				fmt.Printf(board[i][j].locator)
+				if board[i][j].locator != "--" {
+					fmt.Printf("|%s", board[i][j].locator)
+				} else if traces[i][j] == 1{
+					fmt.Printf("|xx")
+					traces[i][j] = 0
+				} else {
+					fmt.Printf("|--")
+				}
 			}
+			fmt.Printf("|")
 			fmt.Println()
 		}
-
-		time.Sleep(time.Second * 3)
+		fmt.Println()
+		time.Sleep(time.Second * 1)
 	}
 }
 
@@ -143,6 +156,11 @@ func main() {
 	if err != nil {
 		fmt.Println("Error during conversion")
 		return
+	}
+
+	traces = make([][]uint8, m)
+	for i := range traces {
+		traces[i] = make([]uint8, n)
 	}
 
 	var board [][]*vertex
