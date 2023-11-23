@@ -17,7 +17,7 @@ var err error
 type vertex struct {
 	locator string
 	traveller *traveller
-	channel chan *traveller
+	channel chan *traveller //it needs to be moved to a seprate file
 }
 
 func new_vertex(symbol string, channel chan *traveller) *vertex{
@@ -34,6 +34,7 @@ func get_random_empty_vertex(trav *traveller, board [][]*vertex) {
 	n1 := r1.Intn(n)
 
 	if board[m1][n1].traveller == nil {
+		// the spawning system needs to be rewritten accordingly to the new ask/resp system
 		board[m1][n1].channel <- trav
 		trav.pos_x = m1
 		trav.pos_y = n1
@@ -45,6 +46,7 @@ func get_random_empty_vertex(trav *traveller, board [][]*vertex) {
 
 func vertex_listener(vert *vertex) {
 	for {
+		// here we should manage the states of our vertex and send out respones
 		traveller := <- vert.channel
 		vert.traveller = traveller
 		vert.locator = strconv.Itoa(traveller.id)
@@ -87,6 +89,7 @@ func run_traveller(traveller *traveller, board [][]*vertex) {
 		x := traveller.pos_x
 		y := traveller.pos_y
 		switch direction := rand.Intn(4); direction {
+			// here we should have the ask/resp mechanism
 		case 0:
 			if x + 1 < m && board[x + 1][y].traveller == nil{
 				board[x + 1][y].channel <- traveller
@@ -137,6 +140,7 @@ func print_board(board [][]*vertex) {
 				} else if traces[i][j] == 1{
 					fmt.Printf("|xx")
 					traces[i][j] = 0
+					// printing traves should work differently
 				} else {
 					fmt.Printf("|--")
 				}
@@ -165,7 +169,7 @@ func main() {
 		traces[i] = make([]uint8, n)
 	}
 
-	var board [][]*vertex
+	var board [][]*vertex //our board should be global for the single vertexes to be able to look at the others
 
 	for i := 0; i < m; i++ {
 		var vertex_row []*vertex
