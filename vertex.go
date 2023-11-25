@@ -1,9 +1,4 @@
-package vertex
-
-import(
-	"fmt"
-	"traveller"
-)
+package main
 
 type vertex struct {
 	traveller *traveller //it needs to be moved to a seprate file
