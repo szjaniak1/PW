@@ -17,11 +17,45 @@ func vertex_listener(vert *vertex) {
 		select {
 		case read := <- vert.read_channel:
 			if vert.traveller != nil{
-				read.resp <- false
+				if vert.traveller.traveller_type == wild {
+					switch read.action {
+					case wild_traveller_move_in:
+						read.resp <- false
+						break
+					case normal_traveller_move_in:
+						fmt.Printf("JESTESMYYY %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
+						read_op := read_op{
+							action : normal_traveller_move_in,
+							resp : make(chan bool)}
+						vert.traveller.notify <- read_op
+						fmt.Printf("JESTESMYYY moze to %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
+						access := <- read_op.resp
+						fmt.Printf("JESTESMYYY???? %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
+						if access {
+							read.resp <- true
+							new_traveller := <- vert.write_channel
+							vert.traveller = new_traveller.val
+							new_traveller.resp <- true 
+						} else {
+							read.resp <- false
+						}
+						break
+					case wild_traveller_quit:
+						read.resp <- true
+						new_traveller := <- vert.write_channel
+						vert.traveller = new_traveller.val
+						new_traveller.resp <- true 
+						break
+					}
+				} else {
+					read.resp <- false
+				}
 			} else {
+				fmt.Printf("empty 4\n")
 				read.resp <- true
 				new_traveller := <- vert.write_channel
 				vert.traveller = new_traveller.val
+				fmt.Printf("empty %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
 				new_traveller.resp <- true 
 			}
 		}
@@ -34,14 +68,16 @@ func spawn_random_traveller(board [][]*vertex, traveller_type int) {
 		for{
 			traveller := new_traveller(k, traveller_type)
 			k++
-			go start_traveller(traveller, board)
-			if k >= m * n { break }
+			go start_traveller(traveller, board, traveller_type)
+			if k >= 12 { break }
 			time.Sleep(normal_traveller_wait_time)
 		}
 		break
 	case wild:
 		for {
-			// traveller := new_traveller(99, traveller_type)
+			traveller := new_traveller(99, traveller_type)
+			go start_traveller(traveller, board, traveller_type)
+			if k >= 12{ break }
 			time.Sleep(wild_traveller_wait_time)
 		}
 		break
@@ -54,8 +90,15 @@ func spawn_random_traveller(board [][]*vertex, traveller_type int) {
 	}
 }
 
-func start_traveller(traveller *traveller, board[][]*vertex) {
+func start_traveller(traveller *traveller, board[][]*vertex, traveller_type int) {
+	var action int
+	if traveller_type == normal {
+		action = normal_traveller_move_in
+	} else if traveller_type == wild {
+		action = wild_traveller_move_in
+	}
 	read_op := read_op{
+		action : action,
 		resp : make(chan bool)}
 	write_op := write_op{
 		val : traveller,
@@ -77,11 +120,19 @@ func start_traveller(traveller *traveller, board[][]*vertex) {
 			}
 		}
 	}
-	go run_traveller(traveller, board)
+	switch traveller_type {
+	case normal:
+		go run_traveller(traveller, board)
+		break
+	case wild:
+		go run_wild_traveller(traveller, board)
+		break
+	}
 }
 
 func run_traveller(traveller *traveller, board [][]*vertex) {
 	read_op := read_op{
+		action : normal_traveller_move_in,
 		resp : make(chan bool)}
 	write_op := write_op{
 		val : traveller,
@@ -157,8 +208,122 @@ func run_traveller(traveller *traveller, board [][]*vertex) {
 	}
 }
 
-func run_wild_locator(traveller *traveller, board [][]*vertex) {
+func run_wild_traveller(traveller *traveller, board [][]*vertex) {
+	timer := time.NewTimer(wild_traveller_life_time)
+	quit := make(chan bool)
 
+	read_op := read_op{
+		action : wild_traveller_move_in,
+		resp : make(chan bool)}
+	write_op := write_op{
+		val : traveller,
+		resp : make(chan bool)}
+	go func() {
+		for {
+			select{
+			case <-quit:
+				go delete_wild_traveller(traveller, board)
+				return
+			case read := <-traveller.notify:
+				var access bool
+				x := traveller.pos_x
+				y := traveller.pos_y
+				fmt.Printf("start %d;%d\n", x, y)
+				if x + 1 < m {
+					fmt.Printf("check 11 %d;%d\n", x, y)
+					board[x + 1][y].read_channel <- read_op
+					fmt.Printf("check 1 %d;%d\n", x, y)
+					access = <-read_op.resp
+					fmt.Printf("check 444 %d;%d\n", x, y)
+					if access {
+						board[x + 1][y].write_channel <- write_op
+						resp := <- write_op.resp
+						if resp {
+							read.resp <- true
+						}
+						break
+					}
+				}
+				
+				if x - 1 >= 0 {
+					fmt.Printf("check 22 %d;%d\n", x, y)
+					board[x - 1][y].read_channel <- read_op
+					fmt.Printf("check 2 %d;%d\n", x, y)
+					access = <-read_op.resp
+					fmt.Printf("check 222 %d;%d\n", x, y)
+					if access {
+						board[x - 1][y].write_channel <- write_op
+						resp := <- write_op.resp
+						if resp {
+							read.resp <- true
+						}
+						break
+					}
+				}
+				
+				if y + 1 < n {
+					fmt.Printf("check 33 %d;%d\n", x, y)
+					board[x][y + 1].read_channel <- read_op
+					fmt.Printf("check 3 %d;%d\n", x, y)
+					access = <-read_op.resp
+					fmt.Printf("check 333 %d;%d\n", x, y)
+					if access {
+						board[x][y + 1].write_channel <- write_op
+						
+						resp := <- write_op.resp
+						if resp {
+							read.resp <- true
+						}
+						break
+					}
+				}
+				
+				if y - 1 >= 0 {
+					fmt.Printf("check 44 %d;%d\n", x, y)
+					board[x][y - 1].read_channel <- read_op
+					fmt.Printf("check 4 %d;%d\n", x, y)
+					access = <-read_op.resp
+					fmt.Printf("check 444 %d;%d\n", x, y)
+					if access {
+						board[x][y - 1].write_channel <- write_op
+
+						resp := <- write_op.resp
+						if resp {
+							read.resp <- true
+						}
+						break
+					}
+				}
+				fmt.Printf("cannot %d;%d\n", x, y)
+				read.resp <- false
+			}
+		}
+	}()
+	<-timer.C
+	quit <- true
+}
+
+func delete_wild_traveller(traveller *traveller, board[][]*vertex) {
+	x := traveller.pos_x
+	y := traveller.pos_y
+
+	read_op := read_op{
+		action : wild_traveller_quit,
+		resp : make(chan bool)}
+	write_op := write_op{
+		val : nil,
+		resp : make(chan bool)}
+
+	board[x][y].read_channel <- read_op
+	access := <-read_op.resp
+	if access {
+		board[x][y].write_channel <- write_op
+		<- write_op.resp
+	}
+
+	read := <-traveller.notify
+	read.resp <- true
+	close(traveller.notify)
 }
 
 func print_board(board [][]*vertex) {

@@ -35,6 +35,7 @@ func main() {
 	}
 
 	go spawn_random_traveller(board, normal)
+	go spawn_random_traveller(board, wild)
 	go print_board(board)
 
 	select {}
