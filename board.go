@@ -16,60 +16,63 @@ func vertex_listener(vert *vertex) {
 	for {
 		select {
 		case read := <- vert.read_channel:
-			if vert.traveller != nil{
-				if vert.traveller.traveller_type == wild {
-					switch read.action {
-					case wild_traveller_move_in:
-						read.resp <- false
-						break
-					case normal_traveller_move_in:
-						fmt.Printf("JESTESMYYY %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
-						read_op := read_op{
-							action : normal_traveller_move_in,
-							resp : make(chan bool)}
-						vert.traveller.notify <- read_op
-						fmt.Printf("JESTESMYYY moze to %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
-						access := <- read_op.resp
-						fmt.Printf("JESTESMYYY???? %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
-						if access {
+			go func() {
+				if vert.traveller != nil{
+					if vert.traveller.traveller_type == wild {
+						switch read.action {
+						case wild_traveller_move_in:
+							read.resp <- false
+							break
+						case normal_traveller_move_in:
+							// fmt.Printf("JESTESMYYY %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
+							read_op := read_op{
+								action : normal_traveller_move_in,
+								resp : make(chan bool)}
+							vert.traveller.notify <- read_op
+							// fmt.Printf("JESTESMYYY moze to %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
+							access := <- read_op.resp
+							// fmt.Printf("JESTESMYYY???? %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
+							if access {
+								read.resp <- true
+								new_traveller := <- vert.write_channel
+								vert.traveller = new_traveller.val
+								new_traveller.resp <- true 
+							} else {
+								read.resp <- false
+							}
+							break
+						case wild_traveller_quit:
 							read.resp <- true
 							new_traveller := <- vert.write_channel
 							vert.traveller = new_traveller.val
 							new_traveller.resp <- true 
-						} else {
-							read.resp <- false
+							break
 						}
-						break
-					case wild_traveller_quit:
-						read.resp <- true
-						new_traveller := <- vert.write_channel
-						vert.traveller = new_traveller.val
-						new_traveller.resp <- true 
-						break
+					} else {
+						read.resp <- false
 					}
 				} else {
-					read.resp <- false
+					// fmt.Printf("empty 4\n")
+					read.resp <- true
+					new_traveller := <- vert.write_channel
+					vert.traveller = new_traveller.val
+					// fmt.Printf("empty %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
+					new_traveller.resp <- true 
 				}
-			} else {
-				fmt.Printf("empty 4\n")
-				read.resp <- true
-				new_traveller := <- vert.write_channel
-				vert.traveller = new_traveller.val
-				fmt.Printf("empty %d;%d\n", vert.traveller.pos_x, vert.traveller.pos_y)
-				new_traveller.resp <- true 
-			}
+			}()
 		}
 	}
 }
 
 func spawn_random_traveller(board [][]*vertex, traveller_type int) {
+	limit := m * n
 	switch traveller_type {
 	case normal:
 		for{
 			traveller := new_traveller(k, traveller_type)
 			k++
 			go start_traveller(traveller, board, traveller_type)
-			if k >= 12 { break }
+			if k >= limit { break }
 			time.Sleep(normal_traveller_wait_time)
 		}
 		break
@@ -77,7 +80,7 @@ func spawn_random_traveller(board [][]*vertex, traveller_type int) {
 		for {
 			traveller := new_traveller(99, traveller_type)
 			go start_traveller(traveller, board, traveller_type)
-			if k >= 12{ break }
+			if k >= limit{ break }
 			time.Sleep(wild_traveller_wait_time)
 		}
 		break
@@ -228,13 +231,13 @@ func run_wild_traveller(traveller *traveller, board [][]*vertex) {
 				var access bool
 				x := traveller.pos_x
 				y := traveller.pos_y
-				fmt.Printf("start %d;%d\n", x, y)
+				// fmt.Printf("start %d;%d\n", x, y)
 				if x + 1 < m {
-					fmt.Printf("check 11 %d;%d\n", x, y)
+					// fmt.Printf("check 11 %d;%d\n", x, y)
 					board[x + 1][y].read_channel <- read_op
-					fmt.Printf("check 1 %d;%d\n", x, y)
+					// fmt.Printf("check 1 %d;%d\n", x, y)
 					access = <-read_op.resp
-					fmt.Printf("check 444 %d;%d\n", x, y)
+					// fmt.Printf("check 444 %d;%d\n", x, y)
 					if access {
 						board[x + 1][y].write_channel <- write_op
 						resp := <- write_op.resp
@@ -246,11 +249,11 @@ func run_wild_traveller(traveller *traveller, board [][]*vertex) {
 				}
 				
 				if x - 1 >= 0 {
-					fmt.Printf("check 22 %d;%d\n", x, y)
+					// fmt.Printf("check 22 %d;%d\n", x, y)
 					board[x - 1][y].read_channel <- read_op
-					fmt.Printf("check 2 %d;%d\n", x, y)
+					// fmt.Printf("check 2 %d;%d\n", x, y)
 					access = <-read_op.resp
-					fmt.Printf("check 222 %d;%d\n", x, y)
+					// fmt.Printf("check 222 %d;%d\n", x, y)
 					if access {
 						board[x - 1][y].write_channel <- write_op
 						resp := <- write_op.resp
@@ -262,11 +265,11 @@ func run_wild_traveller(traveller *traveller, board [][]*vertex) {
 				}
 				
 				if y + 1 < n {
-					fmt.Printf("check 33 %d;%d\n", x, y)
+					// fmt.Printf("check 33 %d;%d\n", x, y)
 					board[x][y + 1].read_channel <- read_op
-					fmt.Printf("check 3 %d;%d\n", x, y)
+					// fmt.Printf("check 3 %d;%d\n", x, y)
 					access = <-read_op.resp
-					fmt.Printf("check 333 %d;%d\n", x, y)
+					// fmt.Printf("check 333 %d;%d\n", x, y)
 					if access {
 						board[x][y + 1].write_channel <- write_op
 						
@@ -279,11 +282,11 @@ func run_wild_traveller(traveller *traveller, board [][]*vertex) {
 				}
 				
 				if y - 1 >= 0 {
-					fmt.Printf("check 44 %d;%d\n", x, y)
+					// fmt.Printf("check 44 %d;%d\n", x, y)
 					board[x][y - 1].read_channel <- read_op
-					fmt.Printf("check 4 %d;%d\n", x, y)
+					// fmt.Printf("check 4 %d;%d\n", x, y)
 					access = <-read_op.resp
-					fmt.Printf("check 444 %d;%d\n", x, y)
+					// fmt.Printf("check 444 %d;%d\n", x, y)
 					if access {
 						board[x][y - 1].write_channel <- write_op
 
@@ -294,7 +297,7 @@ func run_wild_traveller(traveller *traveller, board [][]*vertex) {
 						break
 					}
 				}
-				fmt.Printf("cannot %d;%d\n", x, y)
+				// fmt.Printf("cannot %d;%d\n", x, y)
 				read.resp <- false
 			}
 		}
