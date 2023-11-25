@@ -1,1 +1,2 @@
-Programowanie wspolbiezne
+Projekt w jezyku Go
+Programowanie Wspolbiezne
