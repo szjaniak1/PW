@@ -6,8 +6,6 @@ import(
 	"strconv"
 	"time"
 	"math/rand"
-	// "traveller"
-	// "vertex"
 )
 
 var k int
@@ -36,10 +34,36 @@ func spawn_random_traveller(board [][]*vertex) {
 	for{
 		traveller := new_traveller(k)
 		k++
-		go run_traveller(traveller, board)
+		go start_traveller(traveller, board)
 		if k >= m * n { break }
 		time.Sleep(time.Second * 5)
 	}
+}
+
+func start_traveller(traveller *traveller, board[][]*vertex) {
+	read_op := read_op{
+		resp : make(chan bool)}
+	write_op := write_op{
+		val : traveller,
+		resp : make(chan bool)}
+
+	for {
+		pos_x := rand.Intn(m)
+		pos_y := rand.Intn(n)
+
+		board[pos_x][pos_y].read_channel <-read_op
+		access := <-read_op.resp
+		if access {
+			board[pos_x][pos_y].write_channel <- write_op
+			resp := <-write_op.resp
+			if resp {
+				traveller.pos_x = pos_x
+				traveller.pos_y = pos_y
+				break
+			}
+		}
+	}
+	go run_traveller(traveller, board)
 }
 
 func run_traveller(traveller *traveller, board [][]*vertex) {
@@ -48,6 +72,7 @@ func run_traveller(traveller *traveller, board [][]*vertex) {
 	write_op := write_op{
 		val : traveller,
 		resp : make(chan bool)}
+
 	for {
 		x := traveller.pos_x
 		y := traveller.pos_y
@@ -162,7 +187,7 @@ func main() {
 	// 	traces[i] = make([]uint8, n)
 	// }
 
-	var board [][]*vertex //our board should be global for the single vertexes to be able to look at the others
+	var board [][]*vertex
 
 	for i := 0; i < m; i++ {
 		var vertex_row []*vertex

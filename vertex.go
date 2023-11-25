@@ -1,7 +1,7 @@
 package main
 
 type vertex struct {
-	traveller *traveller //it needs to be moved to a seprate file
+	traveller *traveller
 	read_channel chan read_op
 	write_channel chan write_op
 }
