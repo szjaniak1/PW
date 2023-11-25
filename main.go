@@ -14,6 +14,12 @@ var n int
 // var traces [][]uint8
 var err error
 
+const (
+	normal = 0
+	wild = 1
+	danger = 2
+)
+
 func vertex_listener(vert *vertex) {
 	for {
 		select {
@@ -30,13 +36,27 @@ func vertex_listener(vert *vertex) {
 	}
 }
 
-func spawn_random_traveller(board [][]*vertex) {
-	for{
-		traveller := new_traveller(k)
-		k++
-		go start_traveller(traveller, board)
-		if k >= m * n { break }
-		time.Sleep(time.Second * 5)
+func spawn_random_traveller(board [][]*vertex, traveller_type uint8) {
+	switch traveller_type {
+	case normal:
+		for{
+			traveller := new_traveller(k)
+			k++
+			go start_traveller(traveller, board)
+			if k >= m * n { break }
+			time.Sleep(normal_traveller_wait_time)
+		}
+		break
+	case wild:
+		for {
+			time.Sleep(wild_traveller_wait_time)
+		}
+		break
+	case danger:
+		for {
+			time.Sleep(danger_traveller_wait_time)
+		}
+		break
 	}
 }
 
@@ -143,6 +163,10 @@ func run_traveller(traveller *traveller, board [][]*vertex) {
 	}
 }
 
+func run_wild_locator(traveller *traveller, board [][]*vertex) {
+
+}
+
 func print_board(board [][]*vertex) {
 	var i int
 	var j int
@@ -199,7 +223,7 @@ func main() {
 		board = append(board, vertex_row)
 	}
 
-	go spawn_random_traveller(board)
+	go spawn_random_traveller(board, normal)
 	go print_board(board)
 
 	select {}
