@@ -28,7 +28,6 @@ func vertex_listener(vert *vertex) {
 					read.resp <- false
 					break
 			}
-
 			switch read.action {
 				case wild_traveller_move_in:
 					read.resp <- false
@@ -44,12 +43,6 @@ func vertex_listener(vert *vertex) {
 						break
 					}
 					
-					read.resp <- true
-					new_traveller := <- vert.write_channel
-					vert.traveller = new_traveller.val
-					new_traveller.resp <- true 
-					break
-				case wild_traveller_quit:
 					read.resp <- true
 					new_traveller := <- vert.write_channel
 					vert.traveller = new_traveller.val
@@ -75,7 +68,6 @@ func spawn_wild_traveller(board [][]*vertex) {
 	limit := m * n
 	for{
 		traveller := new_traveller(k, wild)
-		k++
 		go start_traveller(traveller, board, wild)
 		if k >= limit { break }
 		time.Sleep(wild_traveller_wait_time)
@@ -118,7 +110,7 @@ func start_traveller(traveller *traveller, board[][]*vertex, traveller_type int)
 
 		board[pos_x][pos_y].read_channel <-read_op
 		access := <-read_op.resp
-		if !access { break }
+		if !access { continue }
 
 		board[pos_x][pos_y].write_channel <- write_op
 		resp := <-write_op.resp
@@ -211,7 +203,7 @@ func run_normal_traveller(traveller *traveller, board [][]*vertex) {
 			}
 			break
 		}
-		duration := rand.Intn(500)
+		duration := rand.Intn(normal_traveller_thinking_range)
 		time.Sleep(time.Duration(duration) * time.Millisecond)
 	}
 }
@@ -229,9 +221,6 @@ func run_wild_traveller(traveller *traveller, board [][]*vertex) {
 	go func() {
 		for {
 			select{
-			case <-quit:
-				go delete_wild_traveller(traveller, board)
-				return
 			case read := <-traveller.notify:
 				var access bool
 				x := traveller.pos_x
@@ -239,83 +228,69 @@ func run_wild_traveller(traveller *traveller, board [][]*vertex) {
 				if x + 1 < m {
 					board[x + 1][y].read_channel <- read_op
 					access = <-read_op.resp
-					if !access { break }
-
-					board[x + 1][y].write_channel <- write_op
-					resp := <- write_op.resp
-					if resp {
-						read.resp <- true
+					if access {
+						board[x + 1][y].write_channel <- write_op
+						resp := <- write_op.resp
+						if resp {
+							traveller.pos_x++
+							read.resp <- true
+							break
+						}
 					}
-					break
 				}
 				
 				if x - 1 >= 0 {
 					board[x - 1][y].read_channel <- read_op
 					access = <-read_op.resp
-					if !access { break }
-
-					board[x - 1][y].write_channel <- write_op
-					resp := <- write_op.resp
-					if resp {
-						read.resp <- true
+					if access {
+						board[x - 1][y].write_channel <- write_op
+						resp := <- write_op.resp
+						if resp {
+							traveller.pos_x--
+							read.resp <- true
+							break
+						}
 					}
-					break
 				}
 				
 				if y + 1 < n {
 					board[x][y + 1].read_channel <- read_op
 					access = <-read_op.resp
-					if access { break }
-
-					board[x][y + 1].write_channel <- write_op
-					resp := <- write_op.resp
-					if resp {
-						read.resp <- true
+					if access {
+						board[x][y + 1].write_channel <- write_op
+						resp := <- write_op.resp
+						if resp {
+							traveller.pos_y++
+							read.resp <- true
+							break
+						}
 					}
-					break
 				}
 				
 				if y - 1 >= 0 {
 					board[x][y - 1].read_channel <- read_op
 					access = <-read_op.resp
-					if access { break }
-
-					board[x][y - 1].write_channel <- write_op
-					resp := <- write_op.resp
-					if resp {
-						read.resp <- true
-					}
-					break
+					if access {
+						board[x][y - 1].write_channel <- write_op
+						resp := <- write_op.resp
+						if resp {
+							traveller.pos_y--
+							read.resp <- true
+							break
+						}
+					}	
 				}
 				read.resp <- false
+				break
+			case <-quit:
+				board[traveller.pos_x][traveller.pos_y].traveller = nil
+				traveller = nil
+				return
 			}
 		}
 	}()
 	<-timer.C
 	quit <- true
-}
-
-func delete_wild_traveller(traveller *traveller, board[][]*vertex) {
-	x := traveller.pos_x
-	y := traveller.pos_y
-
-	read_op := read_op{
-		action : wild_traveller_quit,
-		resp : make(chan bool)}
-	write_op := write_op{
-		val : nil,
-		resp : make(chan bool)}
-
-	board[x][y].read_channel <- read_op
-	access := <-read_op.resp
-	if access {
-		board[x][y].write_channel <- write_op
-		<- write_op.resp
-	}
-
-	read := <-traveller.notify
-	read.resp <- true
-	close(traveller.notify)
 }
 
 func print_board(board [][]*vertex) {
