@@ -6,12 +6,6 @@ type vertex struct {
 	write_channel chan write_op
 }
 
-const (
-	wild_traveller_move_in = 0
-	wild_traveller_quit = 1
-	normal_traveller_move_in = 2
-)
-
 type read_op struct{
 	action int
 	resp chan bool

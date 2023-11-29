@@ -150,7 +150,7 @@ func run_normal_traveller(traveller *traveller, board [][]*vertex) {
 		x := traveller.pos_x
 		y := traveller.pos_y
 		switch direction := rand.Intn(4); direction {
-		case 0:
+		case RIGHT:
 			if x + 1 >= m { break }
 
 			board[x + 1][y].read_channel <-read_op
@@ -165,7 +165,7 @@ func run_normal_traveller(traveller *traveller, board [][]*vertex) {
 				board[x][y].traveller = nil
 			}
 		break
-		case 1:
+		case LEFT:
 			if x - 1 < 0 { break }
 
 			board[x - 1][y].read_channel <- read_op
@@ -180,7 +180,7 @@ func run_normal_traveller(traveller *traveller, board [][]*vertex) {
 				board[x][y].traveller = nil
 			}
 			break
-		case 2:
+		case DOWN:
 			if y + 1 >= n { break }
 
 			board[x][y + 1].read_channel <- read_op
@@ -195,7 +195,7 @@ func run_normal_traveller(traveller *traveller, board [][]*vertex) {
 				board[x][y].traveller = nil
 			}
 			break
-		case 3:
+		case UP:
 			if y - 1 < 0 { break }
 
 			board[x][y - 1].read_channel <- read_op
