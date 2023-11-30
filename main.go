@@ -18,11 +18,6 @@ func main() {
 		return
 	}
 
-	traces = make([][]uint8, m)
-	for i := range traces {
-		traces[i] = make([]uint8, n)
-	}
-
 	var board [][]*vertex
 
 	for i := 0; i < m; i++ {
@@ -34,6 +29,21 @@ func main() {
 		}
 		board = append(board, vertex_row)
 	}
+
+	height = 2 * m - 1
+	width = 2 * n - 1
+
+	printing_board = make([][]string, height)
+	for row := range printing_board {
+		printing_board[row] = make([]string, width)
+	}
+
+	for i := 1; i < height; i += 2 {
+		for j := 1; j < width; j += 2 {
+			printing_board[i][j] = "  "
+		}
+	}
+
 
 	var wg sync.WaitGroup
 	worker_count := normal_limit + wild_limit + danger_limit

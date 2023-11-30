@@ -5,13 +5,16 @@ import (
 	"time"
 	"math/rand"
 	"runtime"
+	"strconv"
 )
 
 var k int
 var m int
 var n int
-var traces [][]uint8
 var err error
+var printing_board[][]string
+var height int
+var width int
 
 func vertex_listener(vert *vertex) {
 	for {
@@ -230,9 +233,9 @@ func run_normal_traveller(traveller *traveller, board [][]*vertex, ws <-chan int
 				board[x + 1][y].write_channel <- write_op
 				resp := <-write_op.resp
 				if resp {
-					traces[x][y] = 1
 					traveller.pos_x++
 					board[x][y].traveller = nil
+					printing_board[2 * x + 1][2 * y] = "|_|"
 				}
 			break
 			case LEFT:
@@ -245,9 +248,9 @@ func run_normal_traveller(traveller *traveller, board [][]*vertex, ws <-chan int
 				board[x - 1][y].write_channel <- write_op
 				resp := <- write_op.resp
 				if resp {
-					traces[x][y] = 1
 					traveller.pos_x--
 					board[x][y].traveller = nil
+					printing_board[2 * x - 1][2 * y] = "|_|"
 				}
 				break
 			case DOWN:
@@ -260,9 +263,9 @@ func run_normal_traveller(traveller *traveller, board [][]*vertex, ws <-chan int
 				board[x][y + 1].write_channel <- write_op
 				resp := <- write_op.resp
 				if resp {
-					traces[x][y] = 1
 					traveller.pos_y++
 					board[x][y].traveller = nil
+					printing_board[2 * x][2 * y + 1] = "__"
 				}
 				break
 			case UP:
@@ -275,9 +278,9 @@ func run_normal_traveller(traveller *traveller, board [][]*vertex, ws <-chan int
 				board[x][y - 1].write_channel <- write_op
 				resp := <- write_op.resp
 				if resp {
-					traces[x][y] = 1
 					traveller.pos_y--
 					board[x][y].traveller = nil
+					printing_board[2 * x][2 * y - 1] = "__"
 				}
 				break
 			}
@@ -335,6 +338,7 @@ func run_wild_traveller(traveller *traveller, board [][]*vertex, ws <-chan int) 
 								if resp {
 									traveller.pos_x++
 									read.resp <- true
+									printing_board[2 * x + 1][2 * y] = "|_|"
 									break
 								}
 							}
@@ -349,6 +353,7 @@ func run_wild_traveller(traveller *traveller, board [][]*vertex, ws <-chan int) 
 								if resp {
 									traveller.pos_x--
 									read.resp <- true
+									printing_board[2 * x - 1][2 * y] = "|_|"
 									break
 								}
 							}
@@ -363,6 +368,7 @@ func run_wild_traveller(traveller *traveller, board [][]*vertex, ws <-chan int) 
 								if resp {
 									traveller.pos_y++
 									read.resp <- true
+									printing_board[2 * x][2 * y + 1] = "__"
 									break
 								}
 							}
@@ -377,6 +383,7 @@ func run_wild_traveller(traveller *traveller, board [][]*vertex, ws <-chan int) 
 								if resp {
 									traveller.pos_y--
 									read.resp <- true
+									printing_board[2 * x][2 * y - 1] = "__"
 									break
 								}
 							}	
@@ -421,65 +428,37 @@ func print_board(freezers []chan int, board [][]*vertex) {
 	var i int
 	var j int
 
-	// height := 2 * m - 1
-	// width := 2 * n - 1
-
-	// printing_board := make([][]string, height)
-	
-
 	for {
-		// for row_idx := in range printing_board {
-		// 	row := make([]int, width)
-		// 	printing_board[row_idx] = row
-		// }
-
-		// set_state(freezers, RUNNING)
-		// for i = 0; i < m; i++ {
-		// 	for j = 0; j < n; j++ {
-		// 		if board[i][j].traveller == nil {
-		// 			printing_board[i][j]
-		// 			continue
-		// 		}
-
-		// 	}
-		// }
-
-
-
-
-
-
+		set_state(freezers, PAUSED)
 		for i = 0; i < m; i++ {
 			for j = 0; j < n; j++ {
-				if board[i][j].traveller == nil{
-					fmt.Printf("    ")
+				if board[i][j].traveller == nil {
+					printing_board[i * 2][j * 2] = "  "
 					continue
 				}
 
 				switch board[i][j].traveller.traveller_type {
 				case normal:
-					fmt.Printf("%d  ", board[i][j].traveller.id)
+					printing_board[i * 2][j * 2] = strconv.Itoa(board[i][j].traveller.id)
 					break
 				case wild:
-					fmt.Printf("**  ")
+					printing_board[i * 2][j * 2] = "**"
 					break
 				case danger:
-					fmt.Printf("##  ")
+					printing_board[i * 2][j * 2] = "##"
 					break
 				}
-				// if traces[i][j] == 1 {
-				// 	traces[i][j] = 0
-				// }
-				// } else if traces[i][j] == 1{
-				// 	fmt.Printf("|xx")
-				// 	traces[i][j] = 0
-				// 	// printing traves should work differently
+			}
+		}
+		
+		for i = 0; i < height; i++ {
+			for j = 0; j < width; j++ {
+				fmt.Print(printing_board[i][j])
+				printing_board[i][j] = "  "
 			}
 			fmt.Println()
-
-			fmt.Println()
 		}
-		fmt.Println()
+		fmt.Printf("\n---------------------------\n")
 		set_state(freezers, RUNNING)
 		time.Sleep(time.Second * 1)
 	}
