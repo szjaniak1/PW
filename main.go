@@ -18,10 +18,10 @@ func main() {
 		return
 	}
 
-	// traces = make([][]uint8, m)
-	// for i := range traces {
-	// 	traces[i] = make([]uint8, n)
-	// }
+	traces = make([][]uint8, m)
+	for i := range traces {
+		traces[i] = make([]uint8, n)
+	}
 
 	var board [][]*vertex
 
@@ -36,7 +36,7 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
-	worker_count := normal_limit + wild_limit
+	worker_count := normal_limit + wild_limit + danger_limit
 	wg.Add(worker_count + 1)
 	freezers := make([]chan int, worker_count)
 	travellers := create_travellers()
@@ -52,12 +52,22 @@ func main() {
 	}()
 
 	go func() {
-		for i := normal_limit; i < worker_count; i++ { //it should respawn them when they die after some time
+		for i := normal_limit; i < worker_count - danger_limit; i++ { //it should respawn them when they die after some time
 			go func(i int) {
 				start_wild_traveller(travellers[i], board, freezers[i])
 				wg.Done()
 			}(i)
 			time.Sleep(wild_traveller_wait_time)
+		}
+	}()
+
+	go func() {
+		for i := worker_count - danger_limit; i < worker_count; i++ {
+			go func(i int) {
+				start_danger_traveller(travellers[i], board, freezers[i])
+				wg.Done()
+			}(i)
+			time.Sleep(danger_traveller_wait_time)
 		}
 	}()
 	

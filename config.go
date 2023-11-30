@@ -4,6 +4,7 @@ import "time"
 
 const normal_limit = 10
 const wild_limit = 10
+const danger_limit = 20
 
 const (
 	normal = 0
@@ -15,11 +16,14 @@ const normal_traveller_wait_time = time.Second * 3
 const normal_traveller_thinking_range = 500
 const wild_traveller_wait_time = time.Second * 2
 const wild_traveller_life_time = time.Second * 10
-const danger_traveller_wait_time = time.Second * 10
+const danger_traveller_wait_time = time.Second * 2
+const danger_traveller_life_time = time.Second * 10
 
 const (
 	wild_traveller_move_in		= 0
 	normal_traveller_move_in	= 1
+	danger_traveller_move_in	= 2
+	you_die						= 3
 )
 
 const (
