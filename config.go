@@ -12,12 +12,12 @@ const (
 	danger = 2
 )
 
-const normal_traveller_wait_time = time.Second * 3
+const normal_traveller_wait_time = time.Second * 2
 const normal_traveller_thinking_range = 500
-const wild_traveller_wait_time = time.Second * 2
-const wild_traveller_life_time = time.Second * 10
-const danger_traveller_wait_time = time.Second * 2
-const danger_traveller_life_time = time.Second * 10
+const wild_traveller_wait_time = time.Second * 3
+const wild_traveller_life_time = time.Second * 7
+const danger_traveller_wait_time = time.Second * 3
+const danger_traveller_life_time = time.Second * 7
 
 const (
 	wild_traveller_move_in		= 0
