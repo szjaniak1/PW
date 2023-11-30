@@ -4,6 +4,8 @@ import(
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
+	"time"
 )
 
 func main() {
@@ -11,7 +13,6 @@ func main() {
 	k = 10
 	m, err = strconv.Atoi(argsWithoutProg[0])
 	n, err = strconv.Atoi(argsWithoutProg[1])
-
 	if err != nil {
 		fmt.Println("Error during conversion")
 		return
@@ -34,9 +35,37 @@ func main() {
 		board = append(board, vertex_row)
 	}
 
-	go spawn_random_traveller(board, normal)
-	go spawn_random_traveller(board, wild)
-	go print_board(board)
+	var wg sync.WaitGroup
+	worker_count := normal_limit + wild_limit
+	wg.Add(worker_count + 1)
+	freezers := make([]chan int, worker_count)
+	travellers := create_travellers()
+
+	go func() {
+		for i := 0; i < normal_limit; i++ {
+			go func(i int) {
+				start_normal_traveller(travellers[i], board, freezers[i])
+				wg.Done()
+			}(i)
+			time.Sleep(normal_traveller_wait_time)
+		}
+	}()
+
+	go func() {
+		for i := normal_limit; i < worker_count; i++ { //it should respawn them when they die after some time
+			go func(i int) {
+				start_wild_traveller(travellers[i], board, freezers[i])
+				wg.Done()
+			}(i)
+			time.Sleep(wild_traveller_wait_time)
+		}
+	}()
+	
+	time.Sleep(wild_traveller_wait_time)
+	go func() {
+		print_board(freezers, board)
+		wg.Done()
+	}()
 
 	select {}
 }

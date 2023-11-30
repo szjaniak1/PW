@@ -2,6 +2,9 @@ package main
 
 import "time"
 
+const normal_limit = 10
+const wild_limit = 10
+
 const (
 	normal = 0
 	wild = 1
@@ -24,4 +27,10 @@ const (
 	LEFT 	= 1
 	DOWN	= 2
 	UP 		= 3
+)
+
+const (
+	STOPPED = 0
+	PAUSED 	= 1
+	RUNNING = 2
 )
