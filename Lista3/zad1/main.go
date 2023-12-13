@@ -10,9 +10,9 @@ import (
 var output = []string{}
 
 const (
-	THINKING = iota
-	HUNGRY
-	EATING
+	THINKING = 0
+	HUNGRY = 1
+	EATING = 2
 )
 
 func remove_element(slice []string, value string) []string {
@@ -118,16 +118,18 @@ func (dp *dining_philosophers) take_forks(id int) {
 func (dp *dining_philosophers) drop_forks(id int) {
 	dp.state[id] = THINKING
 	output = remove_element(output, "W" + strconv.Itoa(left(id)) + " F" + strconv.Itoa(id) + " W" + strconv.Itoa(right(id, dp.num_phils)))
+
 	fmt.Println(output)
+
 	dp.test((id + 1) % dp.num_phils)
 	dp.test((id + dp.num_phils - 1) % dp.num_phils)
 }
 
 func (dp *dining_philosophers) test(id int) {
-	if dp.state[(id + 1) % dp.num_phils] != EATING &&
+	if 	dp.state[(id + 1) % dp.num_phils] != EATING &&
 		dp.state[(id + dp.num_phils - 1) % dp.num_phils] != EATING &&
 		dp.state[id] == HUNGRY {
-
+	
 		dp.state[id] = EATING
 		dp.cond[id].signal()
 	}
