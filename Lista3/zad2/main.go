@@ -8,6 +8,8 @@ import (
 	"math/rand"
 )
 
+const max_time_to_sleep = 10000
+
 var (
 	readers_count = 0
 	writers_count = 0
@@ -17,55 +19,40 @@ var (
 	visitors = []string{}
 )
 
-type semaphore struct {
-	channel chan struct{}
-}
-
-func new_semaphore(limit int) *semaphore {
-	sem := semaphore{ channel : make(chan struct{}, limit)}
-	return &sem
-}
-
-func acquire(sem *semaphore) {
-	sem.channel <- struct{}{}
-}
-
-func release(sem *semaphore) {
-	<- sem.channel
-}
-
 func run_reader(id int) {
 	rand.Seed(time.Now().UnixNano())
+	id_str := strconv.Itoa(id)
 	for {
-		visitors = append(visitors, "R" + strconv.Itoa(id))
+		visitors = append(visitors, "R" + id_str)
 		fmt.Println(visitors)
-		r := rand.Intn(10000)
+		r := rand.Intn(max_time_to_sleep)
 		time.Sleep(time.Duration(r) * time.Millisecond)
 
 		acquire(rsem)
 		readers_count++
 
-		if readers_count == 1 { acquire(wsem) 	}
+		if readers_count == 1 { acquire(wsem) }
 		release(rsem)
 
-		fmt.Println("updated val " + strconv.Itoa(sh_var))
+		fmt.Println("updated val: " + strconv.Itoa(sh_var))
 		acquire(rsem)
 
 		readers_count--
 		if readers_count == 0 { release(wsem) }
 		release(rsem)
 
-		r = rand.Intn(10000)
+		r = rand.Intn(max_time_to_sleep)
 		time.Sleep(time.Duration(r) * time.Millisecond)
 	}
 }
 
 func run_writer(id int) {  
 	rand.Seed(time.Now().UnixNano())
+	id_str := strconv.Itoa(id)
 	for {
-		visitors = append(visitors, "W" + strconv.Itoa(id))
+		visitors = append(visitors, "W" + id_str)
 		fmt.Println(visitors)
-		r := rand.Intn(10000)
+		r := rand.Intn(max_time_to_sleep)
 		time.Sleep(time.Duration(r) * time.Millisecond)
 
 		writers_count++
@@ -75,9 +62,9 @@ func run_writer(id int) {
 		release(wsem)
 		writers_count--
 
-		visitors = remove_element(visitors, "W" + strconv.Itoa(id))
+		visitors = remove_element(visitors, "W" + id_str)
 		fmt.Println(visitors)
-		r = rand.Intn(10000)
+		r = rand.Intn(max_time_to_sleep)
 		time.Sleep(time.Duration(r) * time.Millisecond)
 	}
 }
