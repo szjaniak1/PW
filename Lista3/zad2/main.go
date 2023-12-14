@@ -12,8 +12,7 @@ const max_time_to_sleep = 10000
 
 var (
 	readers_count = 0
-	writers_count = 0
-	sh_var = 5
+	book = 0
 	rsem = new_semaphore(1)
 	wsem = new_semaphore(1)
 	visitors = []string{}
@@ -21,51 +20,57 @@ var (
 
 func run_reader(id int) {
 	rand.Seed(time.Now().UnixNano())
-	id_str := strconv.Itoa(id)
+	id_str := "R" + strconv.Itoa(id)
+
 	for {
-		visitors = append(visitors, "R" + id_str)
-		fmt.Println(visitors)
 		r := rand.Intn(max_time_to_sleep)
 		time.Sleep(time.Duration(r) * time.Millisecond)
 
 		acquire(rsem)
+
 		readers_count++
-
 		if readers_count == 1 { acquire(wsem) }
-		release(rsem)
+		visitors = append(visitors, id_str)
+		fmt.Println(visitors)
+		fmt.Println("read book: " + strconv.Itoa(book))
 
-		fmt.Println("updated val: " + strconv.Itoa(sh_var))
-		acquire(rsem)
-
-		readers_count--
-		if readers_count == 0 { release(wsem) }
 		release(rsem)
 
 		r = rand.Intn(max_time_to_sleep)
 		time.Sleep(time.Duration(r) * time.Millisecond)
+
+		acquire(rsem)
+
+		readers_count--
+		if readers_count == 0 { release(wsem) }
+		visitors = remove_element(visitors, id_str)
+		fmt.Println(visitors)
+
+		release(rsem)
 	}
 }
 
 func run_writer(id int) {  
 	rand.Seed(time.Now().UnixNano())
-	id_str := strconv.Itoa(id)
+	id_str := "W" + strconv.Itoa(id)
+
 	for {
-		visitors = append(visitors, "W" + id_str)
-		fmt.Println(visitors)
 		r := rand.Intn(max_time_to_sleep)
 		time.Sleep(time.Duration(r) * time.Millisecond)
 
-		writers_count++
 		acquire(wsem)
-
-		sh_var += 5
-		release(wsem)
-		writers_count--
-
-		visitors = remove_element(visitors, "W" + id_str)
+		visitors = append(visitors, id_str)
 		fmt.Println(visitors)
+
+		book += 1
+		fmt.Println("write book: " + strconv.Itoa(book))
+		release(wsem)
+
 		r = rand.Intn(max_time_to_sleep)
 		time.Sleep(time.Duration(r) * time.Millisecond)
+
+		visitors = remove_element(visitors, id_str)
+		fmt.Println(visitors)
 	}
 }
 
